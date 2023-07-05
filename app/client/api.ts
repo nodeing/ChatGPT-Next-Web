@@ -36,6 +36,8 @@ export interface ChatOptions {
 export interface LLMUsage {
   used: number;
   total: number;
+  total_used: number;
+  total_available: number;
 }
 
 export interface LLMModel {

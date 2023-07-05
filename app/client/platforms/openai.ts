@@ -132,7 +132,12 @@ export class ChatGPTApi implements LLMApi {
                 responseTexts.push(Locale.Error.Unauthorized);
               }
 
+              const errmessage =
+                '```json \n{\n    "message": "您的账户余额不足以支撑本次请求，请检查余额是否正确，如果余额不够，请先充值再使用"\n}\n```';
               if (extraInfo) {
+                if (res.status === 403) {
+                  extraInfo = errmessage;
+                }
                 responseTexts.push(extraInfo);
               }
 
@@ -191,7 +196,7 @@ export class ChatGPTApi implements LLMApi {
     const startDate = formatDate(startOfMonth);
     const endDate = formatDate(new Date(Date.now() + ONE_DAY));
 
-    const [used, subs] = await Promise.all([
+    const [used, subs, credit] = await Promise.all([
       fetch(
         this.path(
           `${OpenaiPath.UsagePath}?start_date=${startDate}&end_date=${endDate}`,
@@ -205,13 +210,17 @@ export class ChatGPTApi implements LLMApi {
         method: "GET",
         headers: getHeaders(),
       }),
+      fetch(this.path(OpenaiPath.CreditGrants), {
+        method: "GET",
+        headers: getHeaders(),
+      }),
     ]);
 
     if (used.status === 401) {
       throw new Error(Locale.Error.Unauthorized);
     }
 
-    if (!used.ok || !subs.ok) {
+    if (!used.ok || !subs.ok || !credit.ok) {
       throw new Error("Failed to query usage from openai");
     }
 
@@ -227,12 +236,19 @@ export class ChatGPTApi implements LLMApi {
       hard_limit_usd?: number;
     };
 
+    const creditGrants = (await credit.json()) as {
+      total_used: number;
+      total_available: number;
+    };
+    creditGrants.total_used = creditGrants.total_used * 2;
+    creditGrants.total_available = creditGrants.total_available * 2;
+
     if (response.error && response.error.type) {
       throw Error(response.error.message);
     }
 
     if (response.total_usage) {
-      response.total_usage = Math.round(response.total_usage) / 100;
+      response.total_usage = response.total_usage * 2;
     }
 
     if (total.hard_limit_usd) {
@@ -242,6 +258,8 @@ export class ChatGPTApi implements LLMApi {
     return {
       used: response.total_usage,
       total: total.hard_limit_usd,
+      total_used: creditGrants.total_used,
+      total_available: creditGrants.total_available,
     } as LLMUsage;
   }
 

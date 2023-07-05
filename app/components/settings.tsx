@@ -337,6 +337,8 @@ export function Settings() {
   const usage = {
     used: updateStore.used,
     subscription: updateStore.subscription,
+    total_used: updateStore.total_used,
+    total_available: updateStore.total_available,
   };
   const [loadingUsage, setLoadingUsage] = useState(false);
   function checkUsage(force = false) {
@@ -620,7 +622,7 @@ export function Settings() {
                     ? Locale.Settings.Usage.IsChecking
                     : Locale.Settings.Usage.SubTitle(
                         usage?.used ?? "[?]",
-                        usage?.subscription ?? "[?]",
+                        usage?.total_available ?? "[?]",
                       )
                   : Locale.Settings.Usage.NoAccess
               }

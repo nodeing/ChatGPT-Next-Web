@@ -11,6 +11,8 @@ export interface UpdateStore {
   remoteVersion: string;
 
   used?: number;
+  total_used?: number;
+  total_available?: number;
   subscription?: number;
   lastUpdateUsage: number;
 
@@ -114,6 +116,8 @@ export const useUpdateStore = create<UpdateStore>()(
             set(() => ({
               used: usage.used,
               subscription: usage.total,
+              total_used: usage.total_used,
+              total_available: usage.total_available,
             }));
           }
         } catch (e) {
